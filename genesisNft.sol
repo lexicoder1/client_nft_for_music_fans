@@ -13,16 +13,16 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Counters.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import "./_ERC20.sol";
-import "./chest_nft.sol";
-import "./Big_top_Gnome_Spot.sol";
+import "./spoilsToken.sol";
+import "./chestNft.sol";  
+import "./bigTopGnomeSpot.sol";   
 
   
 
  
 
  
-contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
+contract KleptoGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
     using Address for address;
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -49,8 +49,8 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
     
  
     
-    mapping (uint=>bool) mintchest ;
-    mapping(uint => mapping(address => uint)) private idtostartingtimet;
+    mapping (uint=>bool) mintChest ;
+    mapping(uint => mapping(address => uint)) private idTosStartingTime;
 
         
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
@@ -66,11 +66,11 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
 
     mapping(address => mapping(uint256 => bool)) private _breeded;
 
-    ERC20 _ERC20;
-    Klepto_Gnome_Loot_Chest  _chest_nft;
+    SpoilsToken _SpoilsToken;
+    KleptoGnomeLootChest  _KleptoGnomeLootChest;
 
-    Big_top_Gnome  _Big_top_Gnome;
-   
+    BigTopGnome  _BigTopGnome; 
+    
    
 
  
@@ -94,13 +94,15 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
         _name = name_;
         _symbol = symbol_;
         mint(msg.sender, 24);
-        _ERC20= new ERC20(ERC20name_,ERC20symbol_,ERC20amount,ERC20owneraddress) ;
-        _chest_nft= new Klepto_Gnome_Loot_Chest(chestname_,chestsymbol_);
-        _Big_top_Gnome = new  Big_top_Gnome(bigtopgnomename_,bigtopgnosymbol_,address(_ERC20));
+        _SpoilsToken= new SpoilsToken(ERC20name_,ERC20symbol_,ERC20amount,ERC20owneraddress) ;
+        _KleptoGnomeLootChest= new KleptoGnomeLootChest(chestname_,chestsymbol_);
+        _BigTopGnome = new  BigTopGnome(bigtopgnomename_,bigtopgnosymbol_,address(_SpoilsToken));
         
-        _chest_nft.setapprovedcontractaddress(address(this));  
+        _KleptoGnomeLootChest.setapprovedcontractaddress(address(this));   
 
-        _ERC20.setapprovedcontractaddress(address(this),address(_Big_top_Gnome)); 
+        _SpoilsToken.setapprovedcontractaddress(address(this),address(_BigTopGnome));  
+
+        
         
 
     }
@@ -361,7 +363,7 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
 
         _balances[to] += 1;
         _owners[tokenId] = to;
-        idtostartingtimet[tokenId][to]=block.timestamp;
+        idTosStartingTime[tokenId][to]=block.timestamp;
 
         // totalSupply+=1;
 
@@ -416,7 +418,7 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
   
     
      function setbaseurichestnft(string memory _newBaseURI) public onlyOwner{
-       _chest_nft.setBaseURI(_newBaseURI);
+       _KleptoGnomeLootChest.setBaseURI(_newBaseURI); 
    }
    
 
@@ -432,11 +434,11 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
 
     function transferownershipofbigtopgnome(address add)public onlyOwner    {
 
-        _Big_top_Gnome.transferOwnership(add);      
+        _BigTopGnome.transferOwnership(add);      
     }
 
-    function checkbigtopgnome()public view returns(address){
-        return address(_Big_top_Gnome); 
+    function checkBigTopGnome()public view returns(address){
+        return address(_BigTopGnome);     
     } 
 
 
@@ -444,7 +446,7 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
 
    
 
-      function walletofNFT(address _owner)
+      function walletOfNFT(address _owner)
         public
         view
         returns (uint256[] memory)
@@ -457,19 +459,19 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
         return tokenIds;    
     }
 
-    function checkrewardbal()public view returns(uint){
+    function checkRewardBal()public view returns(uint){
 
         uint256 ownerTokenCount = balanceOf(msg.sender);
            uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-         tokenIds= walletofNFT(msg.sender);
+         tokenIds= walletOfNFT(msg.sender);
          
           uint current;
           uint reward;
           uint rewardbal;
          for (uint i ;i<ownerTokenCount; i++){
              
-             if (idtostartingtimet[tokenIds[i]][msg.sender]>0 ){
-           current = block.timestamp - idtostartingtimet[tokenIds[i]][msg.sender];
+             if (idTosStartingTime[tokenIds[i]][msg.sender]>0 ){
+           current = block.timestamp - idTosStartingTime[tokenIds[i]][msg.sender];
              reward = ((10*10**18)*current)/86400;
             rewardbal+=reward;
           
@@ -481,44 +483,44 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
 
    
 
-    function claimreward() public {
+    function claimReward() public {
           require(balanceOf(msg.sender)>0, "Not Qualified For Reward");
          uint256 ownerTokenCount = balanceOf(msg.sender);
            uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-         tokenIds= walletofNFT(msg.sender);
+         tokenIds= walletOfNFT(msg.sender);
          
           uint current;
           uint reward;
           uint rewardbal;
          for (uint i ;i<ownerTokenCount; i++){
              
-             if (idtostartingtimet[tokenIds[i]][msg.sender]>0 ){
-           current = block.timestamp - idtostartingtimet[tokenIds[i]][msg.sender];
+             if (idTosStartingTime[tokenIds[i]][msg.sender]>0 ){
+           current = block.timestamp - idTosStartingTime[tokenIds[i]][msg.sender];
              reward = ((10*10**18)*current)/86400;
             rewardbal+=reward;
-          idtostartingtimet[tokenIds[i]][msg.sender]=block.timestamp;
+          idTosStartingTime[tokenIds[i]][msg.sender]=block.timestamp;
            }
         }
 
-         _ERC20.mint(msg.sender,rewardbal);
+         _SpoilsToken.mint(msg.sender,rewardbal);
   
 
 
     }
 
 
-     function checkerc20address()public view returns(address) {
+     function checkSpoilsTokenAddress()public view returns(address) {
 
-     return  (address(_ERC20)); //  this is the deployed address of erc20token
+     return  (address(_SpoilsToken)); //  this is the deployed address of erc20token
      
  }
 
-  function checkchestnftaddress()public view returns(address) {
+  function checkChestNftAddress()public view returns(address) {
 
-     return  (address(_chest_nft)); //  this is the deployed address of erc20token
+     return  (address(_KleptoGnomeLootChest)); //  this is the deployed address of erc20token
      
- }
-
+ } 
+ 
   
 
 
@@ -541,12 +543,12 @@ contract Klepto_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IE
         _balances[from] -= 1;
         _balances[to] += 1;
         _owners[tokenId] = to;
-        idtostartingtimet[tokenId][to]=block.timestamp;
-        idtostartingtimet[tokenId][from]=0;
+        idTosStartingTime[tokenId][to]=block.timestamp;
+        idTosStartingTime[tokenId][from]=0;
 
-        if (mintchest[tokenId]==false){
-            _chest_nft.mint(to,tokenId);
-            mintchest[tokenId]=true;
+        if (mintChest[tokenId]==false){
+            _KleptoGnomeLootChest.mint(to,tokenId);
+            mintChest[tokenId]=true; 
         }
         
 

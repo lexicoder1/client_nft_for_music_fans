@@ -14,7 +14,9 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/MerkleProof.sol";
-import "erc20_interface.sol";
+interface SpoilToken{
+     function mint(address add, uint amount)external;
+}
 
 
 
@@ -23,7 +25,7 @@ import "erc20_interface.sol";
 
 
 
-contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
+contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
     using Address for address;
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -48,22 +50,18 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
 
     uint256 public maxSupply = 10000;
 
-    address companywallet= 0xebE448F7347DcF4cf7872e82C6F11880aFd704C0;
-    address communitywallet=0xF111053338a340bBabde350702E43254C201A4Ed;
-    address devteamwallet= 0x9817C311F6897D30e372C119a888028baC879d1c;
+    address companyWallet= 0xebE448F7347DcF4cf7872e82C6F11880aFd704C0;
+    address communityWallet=0xF111053338a340bBabde350702E43254C201A4Ed;
+    address devTeamWallet= 0x9817C311F6897D30e372C119a888028baC879d1c;
 
-    spoilstoken _ERC20; 
+    SpoilToken _SpoilsToken; 
     uint256 public cost = 0.01 ether;
     
     uint256 public maxMintAmount = 10;
     bytes32 public root=0x74f4666169faccda89a45d47ab1997a62f24c3cd534a01539db8f0e40d3eb8b1;
-  
-     
-    
- 
     
    
-    mapping(uint => mapping(address => uint)) private idtostartingtimet;
+    mapping(uint => mapping(address => uint)) private idtoStartingTime;
 
         
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
@@ -76,16 +74,6 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
 
     // Mapping from token id to position in the allTokens array
     mapping(uint256 => uint256) private _allTokensIndex;
-
-     mapping(address => mapping(uint256 => bool)) private _breeded;
-
-     
-     
-   
-   
-
-
-
 
     // Mapping from token ID to owner address
     mapping(uint256 => address) private _owners;
@@ -104,7 +92,7 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
     constructor(string memory name_, string memory symbol_,address erc20add) {
         _name = name_;
         _symbol = symbol_;
-        _ERC20 = spoilstoken(erc20add);
+        _SpoilsToken = SpoilToken(erc20add);
      
        
 
@@ -366,7 +354,7 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
 
         _balances[to] += 1;
         _owners[tokenId] = to;
-        idtostartingtimet[tokenId][to]=block.timestamp;
+        idtoStartingTime[tokenId][to]=block.timestamp;
 
         // totalSupply+=1;
 
@@ -431,7 +419,7 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
    }
                 
     
-    function setmaxsupply(uint256 _maxsupply) public onlyOwner {
+    function setmaxSupply(uint256 _maxsupply) public onlyOwner {
         maxSupply = _maxsupply;
     }
 
@@ -482,8 +470,8 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
           uint rewardbal;
          for (uint i ;i<ownerTokenCount; i++){
              
-             if (idtostartingtimet[tokenIds[i]][msg.sender]>0 ){
-           current = block.timestamp - idtostartingtimet[tokenIds[i]][msg.sender];
+             if (idtoStartingTime[tokenIds[i]][msg.sender]>0 ){
+           current = block.timestamp - idtoStartingTime[tokenIds[i]][msg.sender];
              reward = ((1*10**18)*current)/86400;
             rewardbal+=reward;
           
@@ -506,15 +494,15 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
           uint rewardbal;
          for (uint i ;i<ownerTokenCount; i++){
              
-             if (idtostartingtimet[tokenIds[i]][msg.sender]>0 ){
-           current = block.timestamp - idtostartingtimet[tokenIds[i]][msg.sender];
+             if (idtoStartingTime[tokenIds[i]][msg.sender]>0 ){
+           current = block.timestamp - idtoStartingTime[tokenIds[i]][msg.sender];
              reward = ((1*10**18)*current)/86400;
             rewardbal+=reward;
-          idtostartingtimet[tokenIds[i]][msg.sender]=block.timestamp;
+          idtoStartingTime[tokenIds[i]][msg.sender]=block.timestamp;
            }
         }
 
-         _ERC20.mint(msg.sender,rewardbal);
+         _SpoilsToken.mint(msg.sender,rewardbal);
   
 
 
@@ -527,20 +515,20 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
         // begin withdraw based on address percentage
 
         // 50%
-        payable(companywallet).transfer((balance / 100) * 50);
+        payable(companyWallet).transfer((balance / 100) * 50);
 
         uint256 _balance = address(this).balance;
 
        
         // 97% of 50%
-        payable(communitywallet).transfer(( _balance / 100) * 97);
+        payable(communityWallet).transfer(( _balance / 100) * 97);
         // 3% of  50%
-        payable(devteamwallet).transfer((_balance  / 100) * 3);
+        payable(devTeamWallet).transfer((_balance  / 100) * 3);
        
     }
 
     function checkb()public view returns(uint,uint,uint){
-        return(companywallet.balance,communitywallet.balance,devteamwallet.balance);
+        return(companyWallet.balance,communityWallet.balance,devTeamWallet.balance);
     }
 
      function checkcontbal()public view returns(uint){
@@ -569,8 +557,8 @@ contract Big_top_Gnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, I
         _balances[from] -= 1;
         _balances[to] += 1;
         _owners[tokenId] = to;
-        idtostartingtimet[tokenId][to]=block.timestamp;
-        idtostartingtimet[tokenId][from]=0;
+        idtoStartingTime[tokenId][to]=block.timestamp;
+        idtoStartingTime[tokenId][from]=0;
 
       
         

@@ -18,7 +18,7 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 
 
 
-contract Klepto_Gnome_Loot_Chest  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
+contract KleptoGnomeLootChest  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
     using Address for address;
     using Strings for uint256;
     using Counters for Counters.Counter;
