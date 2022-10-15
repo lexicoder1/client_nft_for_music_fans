@@ -439,14 +439,9 @@ contract KleptoGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
 
     function checkBigTopGnome()public view returns(address){
         return address(_BigTopGnome);     
-    } 
+    }  
 
-
-    
-
-   
-
-      function walletOfNFT(address _owner)
+    function walletOfNFT(address _owner)
         public
         view
         returns (uint256[] memory)

@@ -19,12 +19,6 @@ interface SpoilToken{
 }
 
 
-
-
-
-
-
-
 contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
     using Address for address;
     using Strings for uint256;
@@ -42,6 +36,7 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
     // uint public totalSupply;
 
     Counters.Counter private _tokenIds;
+    bool paused;
     
     
 
@@ -56,6 +51,7 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
 
     SpoilToken _SpoilsToken; 
     uint256 public cost = 0.01 ether;
+    uint256 public discountcost = 0.001 ether;
     
     uint256 public maxMintAmount = 10;
     bytes32 public root=0x74f4666169faccda89a45d47ab1997a62f24c3cd534a01539db8f0e40d3eb8b1;
@@ -340,9 +336,7 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
     ) internal virtual {
         _mint(to, tokenId);
         require(
-            _checkOnERC721Received(address(0), to, tokenId, _data),
-            "ERC721: transfer to non ERC721Receiver implementer"
-        );
+        _checkOnERC721Received(address(0), to, tokenId, _data),"ERC721: transfer to non ERC721Receiver implementer");
     }
 
 
@@ -385,38 +379,86 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
     }
      
     
-     function mint(
+     function whiteListMint(
         address _to,
         uint256 _mintAmount,
         bytes32[] memory proof
         
-    ) public payable {
+     ) public payable {
         // get total NFT token supply
        require(isValid( proof ,_to)==true,"you are not whitelisted");
-        require(_mintAmount > 0);
-        require(_mintAmount <= maxMintAmount);
-        require( totalSupply() + _mintAmount <= maxSupply);
-        require(msg.value >= cost * _mintAmount);
+       require(_mintAmount > 0,"mintamount cant be zero");
+       uint _cost=cost;
+       if (_mintAmount>1){
+         _cost=discountcost;
+       }
+       require(_mintAmount <= maxMintAmount,"mint amount  must be less than maxmint amount");
+       require( totalSupply() + _mintAmount <= maxSupply,"cant mint above totalsupply");
+       require(msg.value >= _cost * _mintAmount,"please pass in the correct payment");
           
           // execute mint
        if (_tokenIds.current()==0){
             _tokenIds.increment();
        }
         
-        for (uint256 i = 1; i <= _mintAmount; i++) {
+       for (uint256 i = 1; i <= _mintAmount; i++) {
             uint256 newTokenID = _tokenIds.current();
             _safeMint(_to, newTokenID);
             _tokenIds.increment();
         }  
+          
+    }
+
+     function publicMint(
+        address _to,
+        uint256 _mintAmount
         
-    
+     ) public payable {
+       require(paused==true ,"public mint not available ");
+       require(_mintAmount > 0,"mintamount cant be zero");
+       require(_mintAmount <= maxMintAmount,"mint amount  must be less than maxmint amount");
+       require( totalSupply() + _mintAmount <= maxSupply,"cant mint above totalsupply");
+       require(msg.value >= cost * _mintAmount,"please pass in the correct payment");
       
+          
+          
+       if (_tokenIds.current()==0){
+            _tokenIds.increment();
+       }
+        
+       for (uint256 i = 1; i <= _mintAmount; i++) {
+            uint256 newTokenID = _tokenIds.current();
+            _safeMint(_to, newTokenID);
+            _tokenIds.increment();
+        }  
+          
+    }
+
+    function adminMint(address _to,uint256 _mintAmount)public onlyOwner{
+        require(_mintAmount > 0);
+        require( totalSupply() + _mintAmount <= maxSupply);
+        if (_tokenIds.current()==0){
+            _tokenIds.increment();
+        }
+        
+        for (uint256 i = 1; i <= _mintAmount; i++) {
+            uint256 newTokenID = _tokenIds.current();
+            _safeMint(_to, newTokenID);
+            _tokenIds.increment();
+        } 
     }
 
     function isValid(bytes32[] memory proof,address add)internal view returns(bool){
        bytes32 leaf= keccak256(abi.encodePacked(add));
        return MerkleProof.verify(proof,root,leaf);
-   }
+    }
+    
+    function setPaused(bool _set)public onlyOwner {
+        paused=_set;
+    }
+    function setRoot(bytes32 _root) public onlyOwner {
+        root = _root;
+    }  
                 
     
     function setmaxSupply(uint256 _maxsupply) public onlyOwner {
@@ -437,6 +479,10 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
         cost = _newCost;
     }
 
+    function setdiscountCost(uint256 _newCost) public onlyOwner {
+        discountcost = _newCost;
+    }
+
     // set or update max number of mint per mint call
     function setmaxMintAmount(uint256 _newmaxMintAmount) public onlyOwner {
         maxMintAmount = _newmaxMintAmount;
@@ -446,7 +492,7 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
 
    
 
-      function walletofNFT(address _owner)
+    function walletofNFT(address _owner)
         public
         view
         returns (uint256[] memory)
@@ -462,20 +508,20 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
     function checkrewardbal()public view returns(uint){
 
         uint256 ownerTokenCount = balanceOf(msg.sender);
-           uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-         tokenIds= walletofNFT(msg.sender);
+        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
+        tokenIds= walletofNFT(msg.sender);
          
-          uint current;
-          uint reward;
-          uint rewardbal;
-         for (uint i ;i<ownerTokenCount; i++){
+        uint current;
+        uint reward;
+        uint rewardbal;
+        for (uint i ;i<ownerTokenCount; i++){
              
-             if (idtoStartingTime[tokenIds[i]][msg.sender]>0 ){
+           if (idtoStartingTime[tokenIds[i]][msg.sender]>0 ){
            current = block.timestamp - idtoStartingTime[tokenIds[i]][msg.sender];
-             reward = ((1*10**18)*current)/86400;
-            rewardbal+=reward;
+           reward = ((1*10**18)*current)/86400;
+           rewardbal+=reward;
           
-           }
+        }
         }
 
         return rewardbal;
@@ -484,22 +530,22 @@ contract BigTopGnome  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IER
    
 
     function claimreward() public {
-          require(balanceOf(msg.sender)>0, "Not Qualified For Reward");
+         require(balanceOf(msg.sender)>0, "Not Qualified For Reward");
          uint256 ownerTokenCount = balanceOf(msg.sender);
-           uint256[] memory tokenIds = new uint256[](ownerTokenCount);
+         uint256[] memory tokenIds = new uint256[](ownerTokenCount);
          tokenIds= walletofNFT(msg.sender);
          
-          uint current;
-          uint reward;
-          uint rewardbal;
+         uint current;
+         uint reward;
+         uint rewardbal;
          for (uint i ;i<ownerTokenCount; i++){
              
-             if (idtoStartingTime[tokenIds[i]][msg.sender]>0 ){
-           current = block.timestamp - idtoStartingTime[tokenIds[i]][msg.sender];
-             reward = ((1*10**18)*current)/86400;
-            rewardbal+=reward;
-          idtoStartingTime[tokenIds[i]][msg.sender]=block.timestamp;
-           }
+         if (idtoStartingTime[tokenIds[i]][msg.sender]>0 ){
+         current = block.timestamp - idtoStartingTime[tokenIds[i]][msg.sender];
+         reward = ((1*10**18)*current)/86400;
+         rewardbal+=reward;
+         idtoStartingTime[tokenIds[i]][msg.sender]=block.timestamp;
+         }
         }
 
          _SpoilsToken.mint(msg.sender,rewardbal);
